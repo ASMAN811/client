@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+import React, { useState } from 'react';
+import { Plus, Edit2, Trash2, Search, Eye, ChevronDown, ChevronUp } from 'lucide-react';
+
+const ClientManagementSystem = () => {
+  const [clients, setClients] = useState(() => {
+    const savedClients = localStorage.getItem('clientManagementData');
+    if (savedClients) {
+      try {
+        return JSON.parse(savedClients);
+      } catch (e) {
+        return [{
+          id: 1,
+          clientId: 'C2024001',
+          name: '山田太郎',
+          kana: 'ヤマダタロウ',
+          birthDate: '1980-05-15',
+          age: 44,
+          gender: '男性',
+          phone: '090-1234-5678',
+          area: '東京都渋谷区',
+          bloodType: 'A型',
+          referrer: '田中様からのご紹介',
+          assignedStaff: '佐藤担当者',
+          sessionPrice: 10000,
+          sessions: [
+            {
+              id: 1,
+              date: '2024-11-01',
+              staff: '佐藤担当者',
+              duration: '60分',
+              content: 'キャリアに関する相談、今後の方向性について',
+              topic: '仕事とプライベートのバランス',
+              rootEmotion: '不安、焦燥感',
+              notes: '最近の業務過多により疲労が蓄積',
+              jurisdiction: '東京オフィス',
+              nextSession: '次回は具体的なアクションプランを策定予定',
+              remarks: '定期的なフォローアップが必要'
+            }
+          ]
+        }];
+      }
+    }
+    return [{
+      id: 1,
+      clientId: 'C2024001',
+      name: '山田太郎',
+      kana: 'ヤマダタロウ',
+      birthDate: '1980-05-15',
+      age: 44,
+      gender: '男性',
+      phone: '090-1234-5678',
+      area: '東京都渋谷区',
+      bloodType: 'A型',
+      referrer: '田中様からのご紹介',
+      assignedStaff: '佐藤担当者',
+      sessionPrice: 10000,
+      sessions: [
+        {
+          id: 1,
+          date: '2024-11-01',
+          staff: '佐藤担当者',
+          duration: '60分',
+          content: 'キャリアに関する相談、今後の方向性について',
+          topic: '仕事とプライベートのバランス',
+          rootEmotion: '不安、焦燥感',
+          notes: '最近の業務過多により疲労が蓄積',
+          jurisdiction: '東京オフィス',
+          nextSession: '次回は具体的なアクションプランを策定予定',
+          remarks: '定期的なフォローアップが必要'
+        }
+      ]
+    }];
+  });
+
+  const [selectedClient, setSelectedClient] = useState(null);
+  const [viewMode, setViewMode] = useState('list');
+  const [isClientFormOpen, setIsClientFormOpen] = useState(false);
+  const [isSessionFormOpen, setIsSessionFormOpen] = useState(false);
+  const [editingClientId, setEditingClientId] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showDetailStats, setShowDetailStats] = useState(false);
+  const [showMonthlyRevenue, setShowMonthlyRevenue] = useState(false);
+  const [showStaffRevenue, setShowStaffRevenue] = useState(false);
+
+  // データが変更されたらLocalStorageに保存
+  React.useEffect(() => {
+    localStorage.setItem('clientManagementData', JSON.stringify(clients));
+  }, [clients]);
+
+  const [clientForm, setClientForm] = useState({
+    clientId: '', name: '', kana: '', birthDate: '', gender: '男性',
+    phone: '', area: '', bloodType: '', referrer: '', assignedStaff: '', sessionPrice: ''
+  });
+
+  const [sessionForm, setSessionForm] = useState({
+    date: new Date().toISOString().split('T')[0],
+    staff: '',
+    duration: '',
+    content: '',
+    topic: '',
+    rootEmotion: '',
+    notes: '',
+    jurisdiction: '',
+    nextSession: '',
+    remarks: ''
+  });
+
+  const calculateAge = (birthDate) => {
+    const today = new Date();
+    const birth = new Date(birthDate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const m = today.getMonth() - birth.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+    return age;
+  };
+
+  const calculateSpiritualNumber = (birthDate) => {
+    if (!birthDate) return null;
+    const [year, month, day] = birthDate.split('-').map(Number);
+    let sum = month + day;
+    
+    // 11, 22, 33のゾロ目をチェック
+    while (sum > 9 && sum !== 11 && sum !== 22 && sum !== 33) {
+      sum = String(sum).split('').reduce((acc, digit) => acc + Number(digit), 0);
+    }
+    
+    return sum;
+  };
+
+  const getSpiritualInfo = (number) => {
+    const spiritualMap = {
+      1: { name: '進化', color: 'white', bgColor: 'bg-gray-100', textColor: 'text-gray-800', borderColor: 'border-gray-300' },
+      2: { name: '調和', color: 'black', bgColor: 'bg-gray-800', textColor: 'text-white', borderColor: 'border-gray-900' },
+      3: { name: '勇気', color: 'blue', bgColor: 'bg-blue-500', textColor: 'text-white', borderColor: 'border-blue-600' },
+      4: { name: '愛', color: 'green', bgColor: 'bg-green-500', textColor: 'text-white', borderColor: 'border-green-600' },
+      5: { name: '吾', color: 'yellow', bgColor: 'bg-yellow-400', textColor: 'text-gray-800', borderColor: 'border-yellow-500' },
+      6: { name: '創造', color: 'white', bgColor: 'bg-gray-100', textColor: 'text-gray-800', borderColor: 'border-gray-300' },
+      7: { name: '信念', color: 'red', bgColor: 'bg-red-500', textColor: 'text-white', borderColor: 'border-red-600' },
+      8: { name: '希望', color: 'white', bgColor: 'bg-gray-100', textColor: 'text-gray-800', borderColor: 'border-gray-300' },
+      9: { name: '純正', color: 'purple', bgColor: 'bg-purple-500', textColor: 'text-white', borderColor: 'border-purple-600' },
+      11: { name: '進化', color: 'white', bgColor: 'bg-gray-100', textColor: 'text-gray-800', borderColor: 'border-gray-300' },
+      22: { name: '調和', color: 'black', bgColor: 'bg-gray-800', textColor: 'text-white', borderColor: 'border-gray-900' },
+      33: { name: '勇気', color: 'blue', bgColor: 'bg-blue-500', textColor: 'text-white', borderColor: 'border-blue-600' }
+    };
+    return spiritualMap[number] || null;
+  };
+
+  const resetClientForm = () => {
+    setClientForm({
+      clientId: '', name: '', kana: '', birthDate: '', gender: '男性',
+      phone: '', area: '', bloodType: '', referrer: '', assignedStaff: '', sessionPrice: ''
+    });
+    setIsClientFormOpen(false);
+    setEditingClientId(null);
+  };
+
+  const resetSessionForm = () => {
+    setSessionForm({
+      date: new Date().toISOString().split('T')[0],
+      staff: '',
+      duration: '',
+      content: '',
+      topic: '',
+      rootEmotion: '',
+      notes: '',
+      jurisdiction: '',
+      nextSession: '',
+      remarks: ''
+    });
+    setIsSessionFormOpen(false);
+  };
+
+  const handleClientSubmit = (e) => {
+    e.preventDefault();
+    const age = calculateAge(clientForm.birthDate);
+    if (editingClientId) {
+      setClients(clients.map(c =>
+        c.id === editingClientId ? { ...clientForm, id: editingClientId, age, sessions: c.sessions } : c
+      ));
+    } else {
+      setClients([...clients, { ...clientForm, id: Date.now(), age, sessions: [] }]);
+    }
+    resetClientForm();
+  };
+
+  const handleSessionSubmit = (e) => {
+    e.preventDefault();
+    const newSession = { ...sessionForm, id: Date.now() };
+    setClients(clients.map(c =>
+      c.id === selectedClient.id ? { ...c, sessions: [...c.sessions, newSession] } : c
+    ));
+    setSelectedClient({ ...selectedClient, sessions: [...selectedClient.sessions, newSession] });
+    resetSessionForm();
+  };
+
+  const handleEditClient = (client) => {
+    setClientForm(client);
+    setEditingClientId(client.id);
+    setIsClientFormOpen(true);
+  };
+
+  const handleDeleteClient = (id) => {
+    if (window.confirm('このクライアント情報を削除しますか？')) {
+      setClients(clients.filter(c => c.id !== id));
+      if (selectedClient && selectedClient.id === id) {
+        setSelectedClient(null);
+        setViewMode('list');
+      }
+    }
+  };
+
+  const handleDeleteSession = (clientId, sessionId) => {
+    if (window.confirm('このセッション記録を削除しますか？')) {
+      setClients(clients.map(c =>
+        c.id === clientId ? { ...c, sessions: c.sessions.filter(s => s.id !== sessionId) } : c
+      ));
+      if (selectedClient && selectedClient.id === clientId) {
+        setSelectedClient({
+          ...selectedClient,
+          sessions: selectedClient.sessions.filter(s => s.id !== sessionId)
+        });
+      }
+    }
+  };
+
+  const filteredClients = clients.filter(c =>
+    c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.kana.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.clientId.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  if (viewMode === 'detail' && selectedClient) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-amber-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          <button onClick={() => setViewMode('list')} className="mb-4 text-yellow-700 hover:text-yellow-900 font-medium flex items-center gap-2">
+            ← クライアント一覧に戻る
+          </button>
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border-t-4 border-yellow-400">
+            <div className="flex justify-between items-start mb-6">
+              <div>
+                <h2 className="text-2xl font-bold text-yellow-800">{selectedClient.name}</h2>
+                <p className="text-yellow-700">クライアントID: {selectedClient.clientId}</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => handleEditClient(selectedClient)}
+                  className="flex items-center gap-2 bg-yellow-400 text-yellow-900 px-4 py-2 rounded-lg hover:bg-yellow-500 transition shadow-md font-semibold">
+                  <Edit2 size={18} />クライアント情報編集
+                </button>
+                <button onClick={() => {
+                    if (window.confirm(`${selectedClient.name}さんのデータを削除しますか？この操作は取り消せません。`)) {
+                      handleDeleteClient(selectedClient.id);
+                    }
+                  }}
+                  className="flex items-center gap-2 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition shadow-md">
+                  <Trash2 size={18} />削除
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+              <div><p className="text-sm text-gray-600">生年月日</p><p className="font-medium">{selectedClient.birthDate} ({selectedClient.age}歳)</p></div>
+              <div>
+                <p className="text-sm text-gray-600">スピリチュアルNo.</p>
+                {(() => {
+                  const spiritualNum = calculateSpiritualNumber(selectedClient.birthDate);
+                  const spiritualInfo = getSpiritualInfo(spiritualNum);
+                  return spiritualInfo ? (
+                    <div className="flex items-center gap-2">
+                      <span className={`${spiritualInfo.bgColor} ${spiritualInfo.textColor} px-3 py-1 rounded-full font-bold border-2 ${spiritualInfo.borderColor}`}>
+                        {spiritualNum}
+                      </span>
+                      <span className="font-medium text-gray-700">{spiritualInfo.name}（{spiritualInfo.color}）</span>
+                    </div>
+                  ) : <p className="font-medium">—</p>;
+                })()}
+              </div>
+              <div><p className="text-sm text-gray-600">性別</p><p className="font-medium">{selectedClient.gender}</p></div>
+              <div><p className="text-sm text-gray-600">血液型</p><p className="font-medium">{selectedClient.bloodType}</p></div>
+              <div><p className="text-sm text-gray-600">電話番号</p><p className="font-medium">{selectedClient.phone}</p></div>
+              <div><p className="text-sm text-gray-600">地域</p><p className="font-medium">{selectedClient.area}</p></div>
+              <div><p className="text-sm text-gray-600">セッション金額</p><p className="font-medium text-green-700">¥{selectedClient.sessionPrice ? Number(selectedClient.sessionPrice).toLocaleString() : '—'}</p></div>
+              <div><p className="text-sm text-gray-600">紹介者</p><p className="font-medium">{selectedClient.referrer || '—'}</p></div>
+              <div><p className="text-sm text-slate-600">担当者</p><p className="font-medium text-slate-800">{selectedClient.assignedStaff}</p></div>
+            </div>
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-slate-900">セッション記録</h3>
+              <button onClick={() => setIsSessionFormOpen(true)}
+                className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition shadow-md">
+                <Plus size={18} />新規セッション追加
+              </button>
+            </div>
+            {isSessionFormOpen && (
+              <div className="bg-slate-50 p-6 rounded-lg mb-6 border border-slate-300">
+                <h4 className="text-lg font-bold mb-4 text-slate-900">新規セッション記録</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div><label className="block text-sm font-medium mb-1">セッション日</label>
+                    <input type="date" className="w-full px-3 py-2 border rounded-lg" value={sessionForm.date}
+                      onChange={(e) => setSessionForm({...sessionForm, date: e.target.value})} />
+                  </div>
+                  <div><label className="block text-sm font-medium mb-1">担当者</label>
+                    <input type="text" className="w-full px-3 py-2 border rounded-lg" value={sessionForm.staff}
+                      onChange={(e) => setSessionForm({...sessionForm, staff: e.target.value})} />
+                  </div>
+                  <div><label className="block text-sm font-medium mb-1">所要時間</label>
+                    <input type="text" placeholder="例: 60分" className="w-full px-3 py-2 border rounded-lg" value={sessionForm.duration}
+                      onChange={(e) => setSessionForm({...sessionForm, duration: e.target.value})} />
+                  </div>
+                  <div><label className="block text-sm font-medium mb-1">所管</label>
+                    <input type="text" placeholder="例: 東京オフィス" className="w-full px-3 py-2 border rounded-lg" value={sessionForm.jurisdiction}
+                      onChange={(e) => setSessionForm({...sessionForm, jurisdiction: e.target.value})} />
+                  </div>
+                  <div className="md:col-span-2"><label className="block text-sm font-medium mb-1">お題</label>
+                    <input type="text" className="w-full px-3 py-2 border rounded-lg" value={sessionForm.topic}
+                      onChange={(e) => setSessionForm({...sessionForm, topic: e.target.value})} />
+                  </div>
+                  <div className="md:col-span-2"><label className="block text-sm font-medium mb-1">内容</label>
+                    <textarea rows="3" className="w-full px-3 py-2 border rounded-lg" value={sessionForm.content}
+                      onChange={(e) => setSessionForm({...sessionForm, content: e.target.value})} />
+                  </div>
+                  <div className="md:col-span-2"><label className="block text-sm font-medium mb-1">根本感情</label>
+                    <input type="text" placeholder="例: 不安、焦燥感" className="w-full px-3 py-2 border rounded-lg" value={sessionForm.rootEmotion}
+                      onChange={(e) => setSessionForm({...sessionForm, rootEmotion: e.target.value})} />
+                  </div>
+                  <div className="md:col-span-2"><label className="block text-sm font-medium mb-1">特記事項</label>
+                    <textarea rows="3" className="w-full px-3 py-2 border rounded-lg" value={sessionForm.notes}
+                      onChange={(e) => setSessionForm({...sessionForm, notes: e.target.value})} />
+                  </div>
+                  <div className="md:col-span-2"><label className="block text-sm font-medium mb-1">次回への申し送り事項</label>
+                    <textarea rows="2" className="w-full px-3 py-2 border rounded-lg" value={sessionForm.nextSession}
+                      onChange={(e) => setSessionForm({...sessionForm, nextSession: e.target.value})} />
+                  </div>
+                  <div className="md:col-span-2"><label className="block text-sm font-medium mb-1">備考</label>
+                    <textarea rows="2" className="w-full px-3 py-2 border rounded-lg" value={sessionForm.remarks}
+                      onChange={(e) => setSessionForm({...sessionForm, remarks: e.target.value})} />
+                  </div>
+                </div>
+                <div className="flex gap-3 mt-4">
+                  <button onClick={handleSessionSubmit} className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">記録を保存</button>
+                  <button onClick={resetSessionForm} className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400">キャンセル</button>
+                </div>
+              </div>
+            )}
+            <div className="space-y-4">
+              {selectedClient.sessions.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">セッション記録がありません</p>
+              ) : (
+                selectedClient.sessions.slice().reverse().map((session) => (
+                  <div key={session.id} className="border rounded-lg p-4 hover:shadow-md">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="text-lg font-bold">{session.date}</p>
+                        <p className="text-sm text-gray-600">担当者: {session.staff} | 所要時間: {session.duration} | 所管: {session.jurisdiction}</p>
+                      </div>
+                      <button onClick={() => handleDeleteSession(selectedClient.id, session.id)} className="text-red-600 hover:text-red-800">
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                    <div className="space-y-2">
+                      <div><span className="text-sm font-semibold">お題: </span><span className="text-sm text-blue-700 font-medium">{session.topic}</span></div>
+                      <div><span className="text-sm font-semibold">内容: </span><span className="text-sm">{session.content}</span></div>
+                      <div className="bg-purple-50 p-2 rounded">
+                        <span className="text-sm font-semibold">根本感情: </span><span className="text-sm">{session.rootEmotion}</span>
+                      </div>
+                      {session.notes && (
+                        <div><span className="text-sm font-semibold">特記事項: </span><span className="text-sm">{session.notes}</span></div>
+                      )}
+                      {session.nextSession && (
+                        <div className="bg-yellow-50 p-2 rounded">
+                          <span className="text-sm font-semibold">次回への申し送り事項: </span><span className="text-sm">{session.nextSession}</span>
+                        </div>
+                      )}
+                      {session.remarks && (
+                        <div><span className="text-sm font-semibold">備考: </span><span className="text-sm text-gray-600">{session.remarks}</span></div>
+                      )}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-yellow-50 to-amber-50 p-3 md:p-6">
+      <div className="max-w-7xl mx-auto">
+        <div className="bg-white rounded-lg shadow-lg p-4 md:p-6">
+          <div className="border-b-4 border-yellow-400 pb-3 md:pb-4 mb-4 md:mb-6">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-3">
+              <div>
+                <h1 className="text-xl md:text-3xl font-bold text-yellow-800">クライアント管理システム</h1>
+                <p className="text-xs md:text-sm text-yellow-700 mt-1">Client Management System</p>
+              </div>
+              <div className="flex flex-wrap gap-2 items-center">
+                <button onClick={() => {
+                    // CSVデータを作成（クライアント情報）
+                    let csvContent = 'クライアントID,氏名,カナ,生年月日,年齢,性別,電話番号,地域,血液型,紹介者,担当者,セッション金額\n';
+                    clients.forEach(client => {
+                      const row = [
+                        client.clientId,
+                        client.name,
+                        client.kana,
+                        client.birthDate,
+                        client.age,
+                        client.gender,
+                        client.phone,
+                        client.area,
+                        client.bloodType,
+                        client.referrer || '',
+                        client.assignedStaff,
+                        client.sessionPrice || ''
+                      ].map(cell => `"${cell}"`).join(',');
+                      csvContent += row + '\n';
+                    });
+                    
+                    // BOMを追加してExcelで文字化けを防ぐ
+                    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+                    const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `クライアント情報_${new Date().toISOString().split('T')[0]}.csv`;
+                    link.click();
+                  }}
+                  className="text-sm bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition font-medium"
+                >
+                  クライアントエクスポート
+                </button>
+                <button
+                  onClick={() => {
+                    // セッション記録のCSVを作成
+                    let csvContent = 'クライアントID,クライアント名,セッション日,担当者,所要時間,お題,内容,根本感情,特記事項,所管,次回への申し送り事項,備考\n';
+                    clients.forEach(client => {
+                      client.sessions.forEach(session => {
+                        const row = [
+                          client.clientId,
+                          client.name,
+                          session.date,
+                          session.staff,
+                          session.duration,
+                          session.topic,
+                          session.content,
+                          session.rootEmotion,
+                          session.notes || '',
+                          session.jurisdiction,
+                          session.nextSession || '',
+                          session.remarks || ''
+                        ].map(cell => `"${cell}"`).join(',');
+                        csvContent += row + '\n';
+                      });
+                    });
+                    
+                    const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+                    const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `セッション記録_${new Date().toISOString().split('T')[0]}.csv`;
+                    link.click();
+                  }}
+                  className="text-sm bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition font-medium"
+                >
+                  セッションエクスポート
+                </button>
+                <button
+                  onClick={() => {
+                    const dataStr = JSON.stringify(clients, null, 2);
+                    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                    const url = URL.createObjectURL(dataBlob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `全データバックアップ_${new Date().toISOString().split('T')[0]}.json`;
+                    link.click();
+                  }}
+                  className="text-xs bg-gray-400 text-white px-3 py-2 rounded hover:bg-gray-500 transition"
+                >
+                  バックアップ
+                </button>
+                <button
+                  onClick={() => {
+                    const input = document.createElement('input');
+                    input.type = 'file';
+                    input.accept = '.json';
+                    input.onchange = (e) => {
+                      const file = e.target.files[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          try {
+                            const importedData = JSON.parse(event.target.result);
+                            if (window.confirm('データをインポートしますか？現在のデータは上書きされます。')) {
+                              setClients(importedData);
+                              alert('データをインポートしました！');
+                            }
+                          } catch (error) {
+                            alert('ファイルの読み込みに失敗しました。');
+                          }
+                        };
+                        reader.readAsText(file);
+                      }
+                    };
+                    input.click();
+                  }}
+                  className="text-xs bg-gray-400 text-white px-3 py-2 rounded hover:bg-gray-500 transition"
+                >
+                  復元
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-4 mb-6">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-3 text-gray-400" size={20} />
+              <input type="text" placeholder="クライアント名、カナ、クライアントIDで検索..."
+                className="w-full pl-10 pr-4 py-2 border rounded-lg" value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)} />
+            </div>
+            <button onClick={() => { setIsClientFormOpen(true); setEditingClientId(null); resetClientForm(); }}
+              className="flex items-center gap-2 bg-yellow-400 text-yellow-900 px-6 py-2 rounded-lg hover:bg-yellow-500 transition shadow-md font-semibold">
+              <Plus size={20} />新規クライアント登録
+            </button>
+          </div>
+          {isClientFormOpen && (
+            <div className="bg-yellow-50 p-6 rounded-lg mb-6 border border-yellow-200">
+              <h2 className="text-xl font-bold mb-4 text-yellow-800">{editingClientId ? 'クライアント情報編集' : '新規クライアント登録'}</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div><label className="block text-sm font-medium mb-1">クライアントID</label>
+                  <input type="text" className="w-full px-3 py-2 border rounded-lg" value={clientForm.clientId}
+                    onChange={(e) => setClientForm({...clientForm, clientId: e.target.value})} />
+                </div>
+                <div><label className="block text-sm font-medium mb-1">氏名</label>
+                  <input type="text" className="w-full px-3 py-2 border rounded-lg" value={clientForm.name}
+                    onChange={(e) => setClientForm({...clientForm, name: e.target.value})} />
+                </div>
+                <div><label className="block text-sm font-medium mb-1">カナ</label>
+                  <input type="text" className="w-full px-3 py-2 border rounded-lg" value={clientForm.kana}
+                    onChange={(e) => setClientForm({...clientForm, kana: e.target.value})} />
+                </div>
+                <div><label className="block text-sm font-medium mb-1">生年月日</label>
+                  <input type="date" className="w-full px-3 py-2 border rounded-lg" value={clientForm.birthDate}
+                    onChange={(e) => setClientForm({...clientForm, birthDate: e.target.value})} />
+                </div>
+                <div><label className="block text-sm font-medium mb-1">性別</label>
+                  <select className="w-full px-3 py-2 border rounded-lg" value={clientForm.gender}
+                    onChange={(e) => setClientForm({...clientForm, gender: e.target.value})}>
+                    <option>男性</option><option>女性</option><option>その他</option>
+                  </select>
+                </div>
+                <div><label className="block text-sm font-medium mb-1">血液型</label>
+                  <select className="w-full px-3 py-2 border rounded-lg" value={clientForm.bloodType}
+                    onChange={(e) => setClientForm({...clientForm, bloodType: e.target.value})}>
+                    <option value="">選択</option><option>A型</option><option>B型</option><option>O型</option><option>AB型</option>
+                  </select>
+                </div>
+                <div><label className="block text-sm font-medium mb-1">電話番号</label>
+                  <input type="tel" className="w-full px-3 py-2 border rounded-lg" value={clientForm.phone}
+                    onChange={(e) => setClientForm({...clientForm, phone: e.target.value})} />
+                </div>
+                <div><label className="block text-sm font-medium mb-1">地域</label>
+                  <input type="text" placeholder="例: 東京都渋谷区" className="w-full px-3 py-2 border rounded-lg" value={clientForm.area}
+                    onChange={(e) => setClientForm({...clientForm, area: e.target.value})} />
+                </div>
+                <div><label className="block text-sm font-medium mb-1">紹介者</label>
+                  <input type="text" placeholder="例: 田中様からのご紹介" className="w-full px-3 py-2 border rounded-lg" value={clientForm.referrer}
+                    onChange={(e) => setClientForm({...clientForm, referrer: e.target.value})} />
+                </div>
+                <div><label className="block text-sm font-medium mb-1">担当者</label>
+                  <input type="text" className="w-full px-3 py-2 border rounded-lg" value={clientForm.assignedStaff}
+                    onChange={(e) => setClientForm({...clientForm, assignedStaff: e.target.value})} />
+                </div>
+                <div><label className="block text-sm font-medium mb-1">セッション金額(円)</label>
+                  <input type="number" placeholder="例: 10000" className="w-full px-3 py-2 border rounded-lg" value={clientForm.sessionPrice}
+                    onChange={(e) => setClientForm({...clientForm, sessionPrice: e.target.value})} />
+                </div>
+              </div>
+              <div className="flex gap-3 mt-6">
+                <button onClick={handleClientSubmit} className="bg-yellow-400 text-yellow-900 px-6 py-2 rounded-lg hover:bg-yellow-500 transition shadow-md font-semibold">
+                  {editingClientId ? '更新' : '登録'}
+                </button>
+                <button onClick={resetClientForm} className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition">キャンセル</button>
+              </div>
+            </div>
+          )}
+          <div className="overflow-x-auto shadow-md rounded-lg -mx-4 md:mx-0">
+            <table className="w-full min-w-[640px]">
+              <thead className="bg-yellow-400 text-yellow-900">
+                <tr>
+                  <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold">ID</th>
+                  <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold">氏名</th>
+                  <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold hidden md:table-cell">カナ</th>
+                  <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold hidden sm:table-cell">年齢</th>
+                  <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold hidden lg:table-cell">性別</th>
+                  <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold hidden lg:table-cell">担当者</th>
+                  <th className="px-2 md:px-4 py-2 md:py-3 text-left text-xs md:text-sm font-semibold">記録</th>
+                  <th className="px-2 md:px-4 py-2 md:py-3 text-center text-xs md:text-sm font-semibold">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredClients.map((client, index) => (
+                  <tr key={client.id} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm">{client.clientId}</td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm font-medium">
+                      <button 
+                        onClick={() => { setSelectedClient(client); setViewMode('detail'); }}
+                        className="text-blue-600 hover:text-blue-800 hover:underline truncate max-w-[120px] md:max-w-none block">
+                        {client.name}
+                      </button>
+                    </td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm hidden md:table-cell">{client.kana}</td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm hidden sm:table-cell">{client.age}歳</td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm hidden lg:table-cell">{client.gender}</td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm text-yellow-800 font-medium hidden lg:table-cell">{client.assignedStaff}</td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm">
+                      <span className="bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium">
+                        {client.sessions.length}
+                      </span>
+                    </td>
+                    <td className="px-2 md:px-4 py-2 md:py-3 text-xs md:text-sm">
+                      <div className="flex justify-center">
+                        <button onClick={() => { setSelectedClient(client); setViewMode('detail'); }}
+                          className="text-green-600 hover:text-green-800" title="詳細">
+                          <Eye size={16} className="md:w-[18px] md:h-[18px]" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {filteredClients.length === 0 && (
+              <div className="text-center py-8 text-gray-500">該当するクライアント情報がありません</div>
+            )}
+          </div>
+          <div className="mt-4 md:mt-6 space-y-4 md:space-y-6">
+            <div className="bg-gradient-to-r from-yellow-300 to-yellow-400 text-yellow-900 p-4 md:p-6 rounded-lg shadow-lg">
+              <h3 className="font-semibold mb-3 md:mb-4 text-base md:text-lg">クライアント統計</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+                <div className="bg-white bg-opacity-60 p-3 md:p-4 rounded-lg backdrop-blur-sm border border-yellow-500 border-opacity-30">
+                  <p className="text-xs md:text-sm text-yellow-800">総数</p>
+                  <p className="text-xl md:text-3xl font-bold mt-1 md:mt-2">{clients.length}</p>
+                </div>
+                <div className="bg-white bg-opacity-60 p-3 md:p-4 rounded-lg backdrop-blur-sm border border-yellow-500 border-opacity-30">
+                  <p className="text-xs md:text-sm text-yellow-800">男性</p>
+                  <p className="text-xl md:text-3xl font-bold mt-1 md:mt-2">{clients.filter(c => c.gender === '男性').length}</p>
+                </div>
+                <div className="bg-white bg-opacity-60 p-3 md:p-4 rounded-lg backdrop-blur-sm border border-yellow-500 border-opacity-30">
+                  <p className="text-xs md:text-sm text-yellow-800">女性</p>
+                  <p className="text-xl md:text-3xl font-bold mt-1 md:mt-2">{clients.filter(c => c.gender === '女性').length}</p>
+                </div>
+                <div className="bg-white bg-opacity-60 p-3 md:p-4 rounded-lg backdrop-blur-sm border border-yellow-500 border-opacity-30">
+                  <p className="text-xs md:text-sm text-yellow-800">総セッション数</p>
+                  <p className="text-xl md:text-3xl font-bold mt-1 md:mt-2">{clients.reduce((sum, c) => sum + c.sessions.length, 0)}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setShowDetailStats(!showDetailStats)}
+                className="mt-3 md:mt-4 w-full bg-white bg-opacity-50 hover:bg-opacity-70 text-yellow-900 px-4 py-2 rounded-lg transition flex items-center justify-center gap-2 border border-yellow-500 border-opacity-30 font-semibold text-sm md:text-base">
+                {showDetailStats ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                {showDetailStats ? '詳細統計を非表示' : '詳細統計を表示'}
+              </button>
+            </div>
+
+            {showDetailStats && (
+              <>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white border-2 border-yellow-200 rounded-lg p-5 shadow-md">
+                <h3 className="font-semibold mb-4 text-yellow-800 text-lg">担当者別クライアント数</h3>
+                <div className="space-y-2">
+                  {(() => {
+                    const staffCount = {};
+                    clients.forEach(c => {
+                      const staff = c.assignedStaff || '未設定';
+                      staffCount[staff] = (staffCount[staff] || 0) + 1;
+                    });
+                    return Object.entries(staffCount).sort((a, b) => b[1] - a[1]).map(([staff, count]) => (
+                      <div key={staff} className="flex justify-between items-center py-3 border-b border-yellow-100">
+                        <span className="text-sm font-medium text-gray-700">{staff}</span>
+                        <span className="text-lg font-bold text-yellow-700">{count}名</span>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              <div className="bg-white border-2 border-yellow-200 rounded-lg p-5 shadow-md">
+                <h3 className="font-semibold mb-4 text-yellow-800 text-lg">性別分布</h3>
+                <div className="space-y-2">
+                  {(() => {
+                    const genderCount = {};
+                    clients.forEach(c => {
+                      const gender = c.gender || '未設定';
+                      genderCount[gender] = (genderCount[gender] || 0) + 1;
+                    });
+                    return Object.entries(genderCount).sort((a, b) => b[1] - a[1]).map(([gender, count]) => (
+                      <div key={gender} className="flex justify-between items-center py-3 border-b border-yellow-100">
+                        <span className="text-sm font-medium text-gray-700">{gender}</span>
+                        <span className="text-lg font-bold text-pink-600">{count}名</span>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              <div className="bg-white border-2 border-yellow-200 rounded-lg p-5 shadow-md">
+                <h3 className="font-semibold mb-4 text-yellow-800 text-lg">担当者別セッション数</h3>
+                <div className="space-y-2">
+                  {(() => {
+                    const staffSessionCount = {};
+                    clients.forEach(c => {
+                      c.sessions.forEach(s => {
+                        const staff = s.staff || '未設定';
+                        staffSessionCount[staff] = (staffSessionCount[staff] || 0) + 1;
+                      });
+                    });
+                    return Object.entries(staffSessionCount).sort((a, b) => b[1] - a[1]).map(([staff, count]) => (
+                      <div key={staff} className="flex justify-between items-center py-3 border-b border-yellow-100">
+                        <span className="text-sm font-medium text-gray-700">{staff}</span>
+                        <span className="text-lg font-bold text-green-700">{count}件</span>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+
+              <div className="bg-white border-2 border-yellow-200 rounded-lg p-5 shadow-md">
+                <h3 className="font-semibold mb-4 text-yellow-800 text-lg">根本感情TOP10</h3>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {(() => {
+                    const emotionCount = {};
+                    clients.forEach(c => {
+                      c.sessions.forEach(s => {
+                        if (s.rootEmotion) {
+                          const emotions = s.rootEmotion.split(/[、,，]/).map(e => e.trim()).filter(e => e);
+                          emotions.forEach(emotion => {
+                            emotionCount[emotion] = (emotionCount[emotion] || 0) + 1;
+                          });
+                        }
+                      });
+                    });
+                    return Object.entries(emotionCount).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([emotion, count]) => (
+                      <div key={emotion} className="flex justify-between items-center py-3 border-b border-yellow-100">
+                        <span className="text-sm font-medium text-gray-700">{emotion}</span>
+                        <span className="text-lg font-bold text-purple-700">{count}件</span>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white border-2 border-yellow-200 rounded-lg p-5 shadow-md">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold text-yellow-800 text-lg">月別セッション売上統計</h3>
+                <button 
+                  onClick={() => setShowMonthlyRevenue(!showMonthlyRevenue)}
+                  className="text-yellow-700 hover:text-yellow-900 transition"
+                >
+                  {showMonthlyRevenue ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </button>
+              </div>
+              <div className="space-y-3">
+                {(() => {
+                  const monthlyRevenue = {};
+                  clients.forEach(c => {
+                    const price = Number(c.sessionPrice) || 0;
+                    c.sessions.forEach(s => {
+                      const date = new Date(s.date);
+                      const yearMonth = `${date.getFullYear()}年${String(date.getMonth() + 1).padStart(2, '0')}月`;
+                      if (!monthlyRevenue[yearMonth]) {
+                        monthlyRevenue[yearMonth] = { count: 0, revenue: 0 };
+                      }
+                      monthlyRevenue[yearMonth].count += 1;
+                      monthlyRevenue[yearMonth].revenue += price;
+                    });
+                  });
+                  
+                  const sortedMonths = Object.entries(monthlyRevenue).sort((a, b) => {
+                    const [yearA, monthA] = a[0].match(/\d+/g).map(Number);
+                    const [yearB, monthB] = b[0].match(/\d+/g).map(Number);
+                    return yearB * 12 + monthB - (yearA * 12 + monthA);
+                  });
+
+                  return sortedMonths.map(([month, data]) => (
+                    <div key={month} className="flex justify-between items-center py-3 px-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <div>
+                        <span className="text-sm font-semibold text-gray-800">{month}</span>
+                        <span className="text-xs text-gray-600 ml-3">セッション数: {data.count}件</span>
+                      </div>
+                      {showMonthlyRevenue && (
+                        <span className="text-xl font-bold text-green-700">¥{data.revenue.toLocaleString()}</span>
+                      )}
+                    </div>
+                  ));
+                })()}
+                {clients.reduce((sum, c) => sum + c.sessions.length, 0) === 0 && (
+                  <p className="text-center text-gray-500 py-4">セッションデータがありません</p>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-white border-2 border-yellow-200 rounded-lg p-5 shadow-md">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold text-yellow-800 text-lg">担当者別売上統計</h3>
+                <button 
+                  onClick={() => setShowStaffRevenue(!showStaffRevenue)}
+                  className="text-yellow-700 hover:text-yellow-900 transition"
+                >
+                  {showStaffRevenue ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </button>
+              </div>
+              <div className="space-y-3">
+                {(() => {
+                  const staffRevenue = {};
+                  clients.forEach(c => {
+                    const price = Number(c.sessionPrice) || 0;
+                    c.sessions.forEach(s => {
+                      const staff = s.staff || '未設定';
+                      if (!staffRevenue[staff]) {
+                        staffRevenue[staff] = { count: 0, revenue: 0 };
+                      }
+                      staffRevenue[staff].count += 1;
+                      staffRevenue[staff].revenue += price;
+                    });
+                  });
+
+                  return Object.entries(staffRevenue).sort((a, b) => b[1].revenue - a[1].revenue).map(([staff, data]) => (
+                    <div key={staff} className="flex justify-between items-center py-3 px-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                      <div>
+                        <span className="text-sm font-semibold text-gray-800">{staff}</span>
+                        <span className="text-xs text-gray-600 ml-3">セッション数: {data.count}件</span>
+                      </div>
+                      {showStaffRevenue && (
+                        <span className="text-xl font-bold text-green-700">¥{data.revenue.toLocaleString()}</span>
+                      )}
+                    </div>
+                  ));
+                })()}
+                {clients.reduce((sum, c) => sum + c.sessions.length, 0) === 0 && (
+                  <p className="text-center text-gray-500 py-4">セッションデータがありません</p>
+                )}
+              </div>
+            </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default ClientManagementSystem;
+</html>
